@@ -1,0 +1,708 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reaction Time Shape Clicker</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 20px;
+            position: relative;
+            z-index: 10;
+        }
+
+        .game-area {
+            position: relative;
+            width: 80vw;
+            height: 60vh;
+            max-width: 800px;
+            max-height: 600px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 20px;
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            margin-bottom: 30px;
+            overflow: hidden;
+            cursor: crosshair;
+        }
+
+        .shape {
+            position: absolute;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            animation: shapeAppear 0.3s ease-out;
+            filter: drop-shadow(0 5px 15px rgba(0,0,0,0.3));
+        }
+
+        .shape:hover {
+            transform: scale(1.1);
+            filter: drop-shadow(0 8px 20px rgba(0,0,0,0.4)) brightness(1.1);
+        }
+
+        .shape:active {
+            transform: scale(0.9);
+        }
+
+        @keyframes shapeAppear {
+            0% {
+                opacity: 0;
+                transform: scale(0.3);
+            }
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .circle {
+            border-radius: 50%;
+            background: linear-gradient(45deg, #ff6b6b, #ffd93d);
+        }
+
+        .square {
+            background: linear-gradient(45deg, #4ecdc4, #44a08d);
+        }
+
+        .rectangle {
+            background: linear-gradient(45deg, #a8edea, #fed6e3);
+        }
+
+        .triangle {
+            width: 0;
+            height: 0;
+            background: none;
+        }
+
+        .triangle.small {
+            border-left: 25px solid transparent;
+            border-right: 25px solid transparent;
+            border-bottom: 43px solid #ff9a9e;
+        }
+
+        .triangle.medium {
+            border-left: 35px solid transparent;
+            border-right: 35px solid transparent;
+            border-bottom: 61px solid #ff9a9e;
+        }
+
+        .triangle.large {
+            border-left: 45px solid transparent;
+            border-right: 45px solid transparent;
+            border-bottom: 78px solid #ff9a9e;
+        }
+
+        .diamond {
+            transform: rotate(45deg);
+            background: linear-gradient(45deg, #ffecd2, #fcb69f);
+        }
+
+        .hexagon {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            position: relative;
+        }
+
+        .hexagon:before,
+        .hexagon:after {
+            content: "";
+            position: absolute;
+            width: 0;
+            border-left: 25px solid transparent;
+            border-right: 25px solid transparent;
+        }
+
+        .hexagon:before {
+            bottom: 100%;
+            border-bottom: 14px solid #667eea;
+        }
+
+        .hexagon:after {
+            top: 100%;
+            border-top: 14px solid #764ba2;
+        }
+
+        .stats {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+            color: white;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .stat {
+            text-align: center;
+            background: rgba(255,255,255,0.1);
+            padding: 15px 20px;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.2);
+            min-width: 100px;
+        }
+
+        .stat-value {
+            font-size: 1.3rem;
+            font-weight: bold;
+            display: block;
+        }
+
+        .stat-label {
+            font-size: 0.8rem;
+            opacity: 0.8;
+            margin-top: 5px;
+        }
+
+        .reaction-time {
+            position: absolute;
+            color: white;
+            font-size: 1.5rem;
+            font-weight: bold;
+            pointer-events: none;
+            z-index: 1000;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+            animation: reactionEffect 2s ease-out forwards;
+        }
+
+        @keyframes reactionEffect {
+            0% {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+            100% {
+                opacity: 0;
+                transform: translateY(-40px) scale(1.2);
+            }
+        }
+
+        .miss-effect {
+            position: absolute;
+            color: #ff6b6b;
+            font-size: 1.8rem;
+            font-weight: bold;
+            pointer-events: none;
+            z-index: 1000;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+            animation: missEffect 1.5s ease-out forwards;
+        }
+
+        @keyframes missEffect {
+            0% {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+            100% {
+                opacity: 0;
+                transform: translateY(-30px) scale(1.3);
+            }
+        }
+
+        .particle {
+            position: absolute;
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 1000;
+        }
+
+        .background-shapes {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            z-index: 1;
+        }
+
+        .bg-shape {
+            position: absolute;
+            opacity: 0.05;
+            animation: backgroundFloat 15s infinite linear;
+        }
+
+        @keyframes backgroundFloat {
+            0% {
+                transform: translateY(100vh) rotate(0deg);
+            }
+            100% {
+                transform: translateY(-100px) rotate(360deg);
+            }
+        }
+
+        .start-btn {
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 30px;
+            cursor: pointer;
+            font-size: 1.1rem;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.3);
+            transition: all 0.3s ease;
+            margin-bottom: 20px;
+        }
+
+        .start-btn:hover {
+            background: rgba(255,255,255,0.3);
+            transform: translateY(-2px);
+        }
+
+        .countdown {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 4rem;
+            font-weight: bold;
+            text-shadow: 0 4px 8px rgba(0,0,0,0.5);
+            z-index: 100;
+        }
+
+        .perfect-bonus {
+            color: #ffd93d !important;
+            text-shadow: 0 0 10px #ffd93d;
+        }
+
+        .fast-bonus {
+            color: #4ecdc4 !important;
+            text-shadow: 0 0 10px #4ecdc4;
+        }
+    </style>
+</head>
+<body>
+    <div class="background-shapes" id="backgroundShapes"></div>
+    
+    <div class="container">
+        <div class="stats">
+            <div class="stat">
+                <span class="stat-value" id="totalShapes">0</span>
+                <span class="stat-label">Current Streak</span>
+            </div>
+            <div class="stat">
+                <span class="stat-value" id="timeLeft">5:00</span>
+                <span class="stat-label">Time Left</span>
+            </div>
+            <div class="stat">
+                <span class="stat-value" id="missedClicks">0</span>
+                <span class="stat-label">Missed Clicks</span>
+            </div>
+            <div class="stat">
+                <span class="stat-value" id="avgReaction">0ms</span>
+                <span class="stat-label">Avg Reaction</span>
+            </div>
+            <div class="stat">
+                <span class="stat-value" id="bestTime">--</span>
+                <span class="stat-label">Best Time</span>
+            </div>
+            <div class="stat">
+                <span class="stat-value" id="accuracy">100%</span>
+                <span class="stat-label">Accuracy</span>
+            </div>
+        </div>
+        
+        <button class="start-btn" id="startBtn" onclick="startGame()">Start Game</button>
+        
+        <div class="game-area" id="gameArea">
+            <div class="countdown" id="countdown" style="display: none;"></div>
+        </div>
+    </div>
+
+    <script>
+        let gameState = {
+            isPlaying: false,
+            totalShapes: 0,
+            totalShapesEver: 0, // Track total shapes clicked across all streaks
+            reactionTimes: [],
+            bestTime: null,
+            missedShapes: 0,
+            missedClicks: 0,
+            currentShape: null,
+            shapeStartTime: 0,
+            gameStartTime: 0,
+            gameTimer: null,
+            timeRemaining: 300, // 5 minutes = 300 seconds
+            timerInterval: null
+        };
+
+        const shapes = [
+            { type: 'circle', sizes: ['small', 'medium', 'large'] },
+            { type: 'square', sizes: ['small', 'medium', 'large'] },
+            { type: 'rectangle', sizes: ['small', 'medium', 'large'] },
+            { type: 'triangle', sizes: ['small', 'medium', 'large'] },
+            { type: 'diamond', sizes: ['small', 'medium', 'large'] },
+            { type: 'hexagon', sizes: ['small', 'medium', 'large'] }
+        ];
+
+        const sizeMap = {
+            small: { width: 30, height: 30 },
+            medium: { width: 50, height: 50 },
+            large: { width: 70, height: 70 }
+        };
+
+        // Create particles on click
+        function createParticles(x, y, color) {
+            for (let i = 0; i < 6; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                particle.style.left = x + 'px';
+                particle.style.top = y + 'px';
+                particle.style.background = color || `hsl(${Math.random() * 360}, 70%, 60%)`;
+                
+                const angle = (Math.PI * 2 * i) / 6;
+                const velocity = 80;
+                const vx = Math.cos(angle) * velocity;
+                const vy = Math.sin(angle) * velocity;
+                
+                document.body.appendChild(particle);
+                
+                let posX = x;
+                let posY = y;
+                let opacity = 1;
+                
+                const animate = () => {
+                    posX += vx * 0.02;
+                    posY += vy * 0.02;
+                    opacity -= 0.025;
+                    
+                    particle.style.left = posX + 'px';
+                    particle.style.top = posY + 'px';
+                    particle.style.opacity = opacity;
+                    
+                    if (opacity > 0) {
+                        requestAnimationFrame(animate);
+                    } else {
+                        particle.remove();
+                    }
+                };
+                
+                requestAnimationFrame(animate);
+            }
+        }
+
+        // Show reaction time
+        function showReactionTime(x, y, time) {
+            const effect = document.createElement('div');
+            effect.className = 'reaction-time';
+            
+            let text = time + 'ms';
+            let className = '';
+            
+            if (time < 200) {
+                text = 'PERFECT! ' + time + 'ms';
+                className = 'perfect-bonus';
+            } else if (time < 400) {
+                text = 'FAST! ' + time + 'ms';
+                className = 'fast-bonus';
+            }
+            
+            effect.textContent = text;
+            effect.className += ' ' + className;
+            effect.style.left = (x - 50) + 'px';
+            effect.style.top = (y - 30) + 'px';
+            document.body.appendChild(effect);
+            
+            setTimeout(() => {
+                effect.remove();
+            }, 2000);
+        }
+
+        // Show miss effect
+        function showMissEffect(x, y) {
+            const effect = document.createElement('div');
+            effect.className = 'miss-effect';
+            effect.textContent = 'MISS! RESET!';
+            effect.style.left = (x - 50) + 'px';
+            effect.style.top = (y - 20) + 'px';
+            document.body.appendChild(effect);
+            
+            setTimeout(() => {
+                effect.remove();
+            }, 1500);
+        }
+
+        // Handle missed clicks on game area
+        function handleGameAreaClick(event) {
+            if (!gameState.isPlaying) return;
+            
+            // Check if click was on the game area but not on a shape
+            if (event.target === document.getElementById('gameArea')) {
+                gameState.missedClicks++;
+                
+                // Reset shape clicks to zero on miss!
+                gameState.totalShapes = 0;
+                
+                const rect = event.target.getBoundingClientRect();
+                const x = event.clientX;
+                const y = event.clientY;
+                
+                // Create red particles for miss
+                createParticles(x, y, '#ff6b6b');
+                showMissEffect(x, y);
+                updateStats();
+            }
+        }
+
+        // Update timer display
+        function updateTimer() {
+            const minutes = Math.floor(gameState.timeRemaining / 60);
+            const seconds = gameState.timeRemaining % 60;
+            const timeString = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+            document.getElementById('timeLeft').textContent = timeString;
+            
+            if (gameState.timeRemaining <= 0) {
+                stopGame();
+            } else {
+                gameState.timeRemaining--;
+            }
+        }
+
+        // Create random shape
+        function createRandomShape() {
+            if (!gameState.isPlaying) return;
+            
+            const gameArea = document.getElementById('gameArea');
+            
+            // Remove previous shape
+            if (gameState.currentShape) {
+                gameState.currentShape.remove();
+            }
+            
+            // Choose random shape and size
+            const shapeData = shapes[Math.floor(Math.random() * shapes.length)];
+            const size = shapeData.sizes[Math.floor(Math.random() * shapeData.sizes.length)];
+            const dimensions = sizeMap[size];
+            
+            const shape = document.createElement('div');
+            shape.className = `shape ${shapeData.type} ${size}`;
+            
+            // Set size for non-triangle shapes
+            if (shapeData.type !== 'triangle') {
+                shape.style.width = dimensions.width + 'px';
+                shape.style.height = dimensions.height + 'px';
+            }
+            
+            // Special handling for rectangle
+            if (shapeData.type === 'rectangle') {
+                shape.style.width = (dimensions.width * 1.5) + 'px';
+            }
+            
+            // Special handling for hexagon
+            if (shapeData.type === 'hexagon') {
+                shape.style.width = dimensions.width + 'px';
+                shape.style.height = (dimensions.height * 0.6) + 'px';
+            }
+            
+            // Random position within game area
+            const maxX = gameArea.offsetWidth - dimensions.width;
+            const maxY = gameArea.offsetHeight - dimensions.height;
+            const x = Math.random() * maxX;
+            const y = Math.random() * maxY;
+            
+            shape.style.left = x + 'px';
+            shape.style.top = y + 'px';
+            
+            shape.addEventListener('click', (event) => {
+                event.stopPropagation();
+                clickShape(event, shape);
+            });
+            
+            gameArea.appendChild(shape);
+            gameState.currentShape = shape;
+            gameState.shapeStartTime = Date.now();
+            
+            // Auto-remove shape after 3 seconds if not clicked
+            shape.timeout = setTimeout(() => {
+                if (shape.parentNode && gameState.isPlaying) {
+                    shape.remove();
+                    gameState.missedShapes++;
+                    
+                    // Reset shape clicks to zero when shape times out too!
+                    gameState.totalShapes = 0;
+                    
+                    updateStats();
+                    createRandomShape();
+                }
+            }, 3000);
+        }
+
+        // Handle shape click
+        function clickShape(event, shape) {
+            if (!gameState.isPlaying) return;
+            
+            clearTimeout(shape.timeout);
+            
+            const reactionTime = Date.now() - gameState.shapeStartTime;
+            gameState.reactionTimes.push(reactionTime);
+            gameState.totalShapes++;
+            gameState.totalShapesEver++;
+            
+            const rect = shape.getBoundingClientRect();
+            const x = event.clientX;
+            const y = event.clientY;
+            
+            // Determine particle color based on reaction time
+            let particleColor = '#4ecdc4';
+            if (reactionTime < 200) particleColor = '#ffd93d';
+            else if (reactionTime < 400) particleColor = '#4ecdc4';
+            else particleColor = '#ff6b6b';
+            
+            createParticles(x, y, particleColor);
+            showReactionTime(x, y, reactionTime);
+            
+            shape.remove();
+            updateStats();
+            
+            // Create next shape after short delay
+            setTimeout(createRandomShape, 500);
+        }
+
+        // Update statistics
+        function updateStats() {
+            document.getElementById('totalShapes').textContent = gameState.totalShapes;
+            document.getElementById('missedClicks').textContent = gameState.missedClicks;
+            
+            if (gameState.reactionTimes.length > 0) {
+                const avg = Math.round(gameState.reactionTimes.reduce((a, b) => a + b) / gameState.reactionTimes.length);
+                document.getElementById('avgReaction').textContent = avg + 'ms';
+                
+                const best = Math.min(...gameState.reactionTimes);
+                if (!gameState.bestTime || best < gameState.bestTime) {
+                    gameState.bestTime = best;
+                }
+                document.getElementById('bestTime').textContent = gameState.bestTime + 'ms';
+            }
+            
+            const totalActions = gameState.totalShapesEver + gameState.missedClicks + gameState.missedShapes;
+            const accuracy = totalActions > 0 ? Math.round((gameState.totalShapesEver / totalActions) * 100) : 100;
+            document.getElementById('accuracy').textContent = accuracy + '%';
+        }
+
+        // Start game with countdown
+        function startGame() {
+            const startBtn = document.getElementById('startBtn');
+            const countdown = document.getElementById('countdown');
+            
+            // Reset game state
+            gameState = {
+                isPlaying: false,
+                totalShapes: 0,
+                totalShapesEver: 0,
+                reactionTimes: [],
+                bestTime: gameState.bestTime, // Keep best time across games
+                missedShapes: 0,
+                missedClicks: 0,
+                currentShape: null,
+                shapeStartTime: 0,
+                gameStartTime: 0,
+                gameTimer: null,
+                timeRemaining: 300, // 5 minutes = 300 seconds
+                timerInterval: null
+            };
+            
+            updateStats();
+            
+            startBtn.style.display = 'none';
+            countdown.style.display = 'block';
+            
+            let count = 3;
+            countdown.textContent = count;
+            
+            const countdownInterval = setInterval(() => {
+                count--;
+                if (count > 0) {
+                    countdown.textContent = count;
+                } else if (count === 0) {
+                    countdown.textContent = 'GO!';
+                } else {
+                    clearInterval(countdownInterval);
+                    countdown.style.display = 'none';
+                    gameState.isPlaying = true;
+                    gameState.gameStartTime = Date.now();
+                    
+                    // Start timer countdown
+                    gameState.timerInterval = setInterval(updateTimer, 1000);
+                    updateTimer(); // Update immediately
+                    
+                    createRandomShape();
+                }
+            }, 1000);
+        }
+
+        // Stop game
+        function stopGame() {
+            gameState.isPlaying = false;
+            
+            if (gameState.timerInterval) {
+                clearInterval(gameState.timerInterval);
+            }
+            
+            if (gameState.gameTimer) {
+                clearTimeout(gameState.gameTimer);
+            }
+            
+            if (gameState.currentShape) {
+                clearTimeout(gameState.currentShape.timeout);
+                gameState.currentShape.remove();
+            }
+            
+            const startBtn = document.getElementById('startBtn');
+            startBtn.style.display = 'block';
+            startBtn.textContent = 'Play Again';
+            
+            // Reset timer display
+            document.getElementById('timeLeft').textContent = '5:00';
+            
+            // Game ends silently - no annoying popup!
+            // All stats are visible in the UI already
+        }
+
+        // Initialize background shapes
+        function createBackgroundShapes() {
+            const container = document.getElementById('backgroundShapes');
+            for (let i = 0; i < 10; i++) {
+                setTimeout(() => {
+                    const shape = document.createElement('div');
+                    const shapeType = shapes[Math.floor(Math.random() * shapes.length)].type;
+                    shape.className = `bg-shape ${shapeType}`;
+                    shape.style.left = Math.random() * 100 + '%';
+                    shape.style.width = (Math.random() * 40 + 20) + 'px';
+                    shape.style.height = (Math.random() * 40 + 20) + 'px';
+                    shape.style.animationDelay = Math.random() * 15 + 's';
+                    container.appendChild(shape);
+                    
+                    setTimeout(() => {
+                        shape.remove();
+                    }, 15000);
+                }, i * 300);
+            }
+        }
+
+        // Initialize
+        document.getElementById('gameArea').addEventListener('click', handleGameAreaClick);
+        setInterval(createBackgroundShapes, 3000);
+        createBackgroundShapes();
+        updateStats();
+    </script>
+</body>
+</html>
